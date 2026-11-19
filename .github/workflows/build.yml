@@ -2,14 +2,15 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -25,11 +26,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Add Android platform (if missing)
-        run: |
-          if [ ! -d "android" ]; then
-            npx cap add android
-          fi
+      - name: Add Android platform
+        run: npx cap add android
 
       - name: Copy native audio recording files
         run: |
@@ -38,22 +36,7 @@ jobs:
           cp native/android/AudioRecordingService.java "$PKG_DIR/"
           cp native/android/AudioRecordingPlugin.java "$PKG_DIR/"
           cp native/android/MainActivity.java "$PKG_DIR/"
-          # Inject manifest permissions + service declaration
-          python3 - <<'PY'
-          import re
-          p = "android/app/src/main/AndroidManifest.xml"
-          s = open(p).read()
-          perms = '''<uses-permission android:name="android.permission.RECORD_AUDIO" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
-<uses-permission android:name="android.permission.WAKE_LOCK" />'''
-          if "RECORD_AUDIO" not in s:
-              s = s.replace("<application", perms + "\\n<application", 1)
-          svc = '''<service android:name=".AudioRecordingService" android:foregroundServiceType="microphone" android:exported="false" />'''
-          if "AudioRecordingService" not in s:
-              s = s.replace("</application>", svc + "\\n</application>", 1)
-          open(p, "w").write(s)
-          PY
+          python3 native/android/patch_manifest.py
 
       - name: Sync Capacitor
         run: npx cap sync android
