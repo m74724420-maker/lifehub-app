@@ -535,7 +535,7 @@ function saveSteps() {
   if (!v) return;
   setTodaySteps(getTodaySteps() + v);
   document.getElementById('steps-input').value = '';
-  renderHealth(); renderDashboard();
+  renderSteps(); renderDashboard();
 }
 
 function renderSteps() {
@@ -951,7 +951,7 @@ function stopStepCounting() {
 function resetSteps() {
   if (!confirm('Сбросить шаги за сегодня?')) return;
   setTodaySteps(0);
-  renderHealth(); renderDashboard();
+  renderSteps(); renderDashboard();
 }
 function handleAccel(x, y, z) {
   if (!stepCounting) return;
@@ -1234,7 +1234,7 @@ function loadSettingsForm() {
   document.getElementById('notif-toggle').checked = !!state.settings.notifications;
   document.getElementById('gdrive-clientid').value = state.settings.gdriveClientId || '';
   hasNotificationPermission().then(ok => notifStatus(ok ? 'Разрешение на уведомления есть' : 'Разрешение не получено — нажмите кнопку ниже'));
-  const stats = `Задач: ${state.tasks.length} (выполнено ${state.tasks.filter(t=>t.done).length}) · Заметок: ${state.notes.length} · Записей дневника: ${state.diary.length} · Привычек: ${state.habits.length} · Операций бюджета: ${state.budget.length}`;
+  const stats = `Вода: ${state.health.water[today()] || 0} стаканов · Шаги: ${getTodaySteps()} · Сессий дыхания: ${(state.breath.sessions || []).length}`;
   document.getElementById('stats-text').textContent = stats;
 }
 function saveSettings() {
