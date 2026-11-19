@@ -54,6 +54,23 @@
         </div>
       </section>
 
+      <!-- DIARY -->
+      <section id="sec-diary" class="section">
+        <div class="section-toolbar">
+          <button class="btn-primary small" id="add-diary-btn">+ Запись</button>
+        </div>
+        <div id="diary-list" class="diary-list"></div>
+      </section>
+
+      <!-- HABITS -->
+      <section id="sec-habits" class="section">
+        <div class="section-toolbar">
+          <input type="text" id="habit-input" placeholder="Новая привычка…" />
+          <button class="btn-primary small" id="add-habit-btn">Добавить</button>
+        </div>
+        <div id="habits-list" class="habits-list"></div>
+      </section>
+
       <!-- STEPS -->
       <section id="sec-steps" class="section">
         <div class="card">
@@ -251,6 +268,8 @@
     <nav class="bottom-nav">
       <button class="nav-item active" data-section="dashboard"><span class="nav-icon">🏠</span><span class="nav-label">Главная</span></button>
       <button class="nav-item" data-section="steps"><span class="nav-icon">👟</span><span class="nav-label">Шаги</span></button>
+      <button class="nav-item" data-section="diary"><span class="nav-icon">📔</span><span class="nav-label">Дневник</span></button>
+      <button class="nav-item" data-section="habits"><span class="nav-icon">🔥</span><span class="nav-label">Привычки</span></button>
       <button class="nav-item" data-section="health"><span class="nav-icon">❤️</span><span class="nav-label">Здоровье</span></button>
       <button class="nav-item" data-section="breath"><span class="nav-icon">🧘</span><span class="nav-label">Дыхание</span></button>
       <button class="nav-item" data-section="settings"><span class="nav-icon">⚙</span><span class="nav-label">Настройки</span></button>

@@ -4,6 +4,8 @@ const STORAGE_KEY = 'lifehub_state_v1';
 const defaultState = () => ({
   name: '',
   password: '',
+  diary: [],
+  habits: [],
   health: { water: {}, sleep: [], steps: [], walks: [] },
   body: { food: [], workouts: [], sleepLog: [] },
   breath: { sessions: [] },
@@ -83,6 +85,8 @@ function doLogin() {
 const sectionTitles = {
   dashboard: 'Главная',
   steps: 'Шаги',
+  diary: 'Дневник',
+  habits: 'Привычки',
   health: 'Здоровье',
   breath: 'Дыхание',
   settings: 'Настройки'
@@ -99,6 +103,8 @@ function showSection(name) {
   // refresh
   if (name === 'dashboard') renderDashboard();
   if (name === 'steps') renderSteps();
+  if (name === 'diary') renderDiary();
+  if (name === 'habits') renderHabits();
   if (name === 'health') renderHealth();
   if (name === 'breath') renderBreath();
   if (name === 'settings') loadSettingsForm();
@@ -1423,6 +1429,25 @@ document.addEventListener('DOMContentLoaded', () => {
       if (a === 'start-breath') { showSection('breath'); }
       if (a === 'record-sleep') { showSection('health'); document.getElementById('sleeprec-start-btn').click(); }
     });
+  });
+
+  // diary
+  document.getElementById('add-diary-btn').addEventListener('click', () => openDiary(null));
+  document.getElementById('save-diary-btn').addEventListener('click', saveDiary);
+  document.querySelectorAll('.mood-btn').forEach(m => {
+    m.addEventListener('click', () => {
+      document.querySelectorAll('.mood-btn').forEach(x => x.classList.remove('active'));
+      m.classList.add('active');
+      selectedMood = m.dataset.mood;
+    });
+  });
+  const defaultMoodBtn = document.querySelector('.mood-btn[data-mood="🙂"]');
+  if (defaultMoodBtn) defaultMoodBtn.classList.add('active');
+
+  // habits
+  document.getElementById('add-habit-btn').addEventListener('click', addHabit);
+  document.getElementById('habit-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addHabit(); }
   });
 
   // health
