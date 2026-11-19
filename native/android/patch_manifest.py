@@ -10,6 +10,8 @@ permissions = [
     "android.permission.FOREGROUND_SERVICE_MICROPHONE",
     "android.permission.WAKE_LOCK",
     "android.permission.POST_NOTIFICATIONS",
+    "android.permission.ACCESS_FINE_LOCATION",
+    "android.permission.ACCESS_COARSE_LOCATION",
 ]
 missing = [p for p in permissions if p not in s]
 if missing:

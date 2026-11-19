@@ -4,13 +4,8 @@ const STORAGE_KEY = 'lifehub_state_v1';
 const defaultState = () => ({
   name: '',
   password: '',
-  tasks: [],
-  notes: [],
-  diary: [],
-  habits: [],
-  budget: [],
   health: { water: {}, sleep: [], steps: [], walks: [] },
-  body: { weight: [], food: [], workouts: [], sleepLog: [] },
+  body: { food: [], workouts: [], sleepLog: [] },
   breath: { sessions: [] },
   settings: { waterGoal: 8, sleepRecThreshold: 25 }
 });
@@ -87,13 +82,8 @@ function doLogin() {
 // ============ Navigation ============
 const sectionTitles = {
   dashboard: 'Главная',
-  tasks: 'Задачи',
-  notes: 'Заметки',
-  diary: 'Дневник',
-  habits: 'Привычки',
-  budget: 'Бюджет',
+  steps: 'Шаги',
   health: 'Здоровье',
-  body: 'Тело',
   breath: 'Дыхание',
   settings: 'Настройки'
 };
@@ -108,13 +98,8 @@ function showSection(name) {
   document.getElementById('page-title').textContent = sectionTitles[name] || name;
   // refresh
   if (name === 'dashboard') renderDashboard();
-  if (name === 'tasks') renderTasks();
-  if (name === 'notes') renderNotes();
-  if (name === 'diary') renderDiary();
-  if (name === 'habits') renderHabits();
-  if (name === 'budget') renderBudget();
+  if (name === 'steps') renderSteps();
   if (name === 'health') renderHealth();
-  if (name === 'body') renderBody();
   if (name === 'breath') renderBreath();
   if (name === 'settings') loadSettingsForm();
 }
@@ -156,25 +141,11 @@ if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App
 function renderDashboard() {
   const name = state.name ? `, ${state.name}` : '';
   document.getElementById('greeting').textContent = `Привет${name}! ${greetingEmoji()}`;
-  const todayTasks = state.tasks.filter(t => !t.done && isTodayOrNoDate(t));
-  const doneTasks = state.tasks.filter(t => t.done && isTodayOrNoDate(t));
-  document.getElementById('dash-tasks').textContent = todayTasks.length;
-  document.getElementById('dash-tasks-sub').textContent = `${doneTasks.length} выполнено`;
-  const hToday = state.habits.filter(h => h.completions && h.completions[today()]);
-  document.getElementById('dash-habits').textContent = `${hToday.length}/${state.habits.length}`;
   document.getElementById('dash-water').textContent = state.health.water[today()] || 0;
   document.getElementById('dash-steps').textContent = getTodaySteps();
-  const todayExp = state.budget.filter(b => b.type === 'expense' && b.date === today()).reduce((s, b) => s + Number(b.amount), 0);
-  const todayInc = state.budget.filter(b => b.type === 'income' && b.date === today()).reduce((s, b) => s + Number(b.amount), 0);
-  document.getElementById('dash-expenses').textContent = todayExp.toLocaleString('ru-RU') + ' ₽';
-  document.getElementById('dash-budget-sub').textContent = `доходы: ${todayInc.toLocaleString('ru-RU')} ₽`;
-  const lastDiary = state.diary.slice().sort((a,b) => b.createdAt.localeCompare(a.createdAt))[0];
-  document.getElementById('dash-diary').textContent = lastDiary ? `${fmtDate(lastDiary.createdAt)} — ${lastDiary.text.slice(0,80)}${lastDiary.text.length>80?'…':''}` : 'Пока нет записей';
-  // tasks list on dashboard
-  const activeTasks = state.tasks.filter(t => !t.done).slice(0,5);
-  const dtl = document.getElementById('dash-task-list');
-  if (activeTasks.length === 0) dtl.innerHTML = '<div class="muted small">Все задачи выполнены 🎉</div>';
-  else dtl.innerHTML = activeTasks.map(t => `<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;">• ${escapeHtml(t.text)}${t.dueDate?` <span class="muted">(${t.dueDate})</span>`:''}</div>`).join('');
+  const sleeps = (state.health.sleep || []).slice().sort((a,b) => b.date.localeCompare(a.date));
+  const lastSleep = sleeps[0];
+  document.getElementById('dash-sleep').textContent = lastSleep ? lastSleep.hours : '—';
 }
 
 function greetingEmoji() {
@@ -516,12 +487,10 @@ function renderHealth() {
   document.getElementById('water-progress').style.width = Math.min(100, water / goal * 100) + '%';
   // sleep history
   const sleeps = (state.health.sleep || []).slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0,5);
-  document.getElementById('sleep-history').textContent = sleeps.map(s => `${s.date}: ${s.hours} ч`).join(' · ') || 'Нет данных';
-  const steps = (state.health.steps || []).slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0,5);
-  document.getElementById('steps-history').textContent = steps.map(s => `${s.date}: ${s.count}`).join(' · ') || 'Нет данных';
-  document.getElementById('steps-today').textContent = getTodaySteps();
-  renderGeoHistory();
+  const sleepHistoryEl = document.getElementById('sleep-history');
+  if (sleepHistoryEl) sleepHistoryEl.textContent = sleeps.map(s => `${s.date}: ${s.hours} ч`).join(' · ') || 'Нет данных';
   renderSleepRecordings();
+  renderBody();
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AudioRecording) {
     renderNativeRecordings();
   }
@@ -569,6 +538,13 @@ function saveSteps() {
   renderHealth(); renderDashboard();
 }
 
+function renderSteps() {
+  document.getElementById('steps-today').textContent = getTodaySteps();
+  const steps = (state.health.steps || []).slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0,5);
+  const el = document.getElementById('steps-history');
+  if (el) el.textContent = steps.map(s => `${s.date}: ${s.count}`).join(' · ') || 'Нет данных';
+  renderGeoHistory();
+}
 // ============ Geolocation / Walks ============
 let geoWatchId = null;
 let geoPoints = [];
@@ -582,8 +558,18 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-function startGeoTracking() {
+async function startGeoTracking() {
   if (geoWatchId !== null) return;
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation && window.Capacitor.Plugins.Geolocation.requestPermissions) {
+    try {
+      const p = await window.Capacitor.Plugins.Geolocation.requestPermissions();
+      if (p.location !== 'granted' && p.coarseLocation !== 'granted') {
+        document.getElementById('geo-status').textContent = 'Нет разрешения на геолокацию';
+        toast('Разрешите геолокацию в настройках телефона');
+        return;
+      }
+    } catch (e) {}
+  }
   if (!('geolocation' in navigator)) {
     document.getElementById('geo-status').textContent = 'Геолокация не поддерживается';
     return;
@@ -973,12 +959,12 @@ function handleAccel(x, y, z) {
   const delta = mag - 9.81;
   const now = Date.now();
   stepAccelBuf.push({ t: now, v: delta });
-  stepAccelBuf = stepAccelBuf.filter(h => now - h.t < 400);
-  if (stepAccelBuf.length < 6) return;
+  stepAccelBuf = stepAccelBuf.filter(h => now - h.t < 500);
+  if (stepAccelBuf.length < 8) return;
   const vals = stepAccelBuf.map(h => h.v);
   const max = Math.max(...vals);
   const min = Math.min(...vals);
-  if (max - min > 2.2 && delta > max - 0.3 && now - stepLastTime > 280) {
+  if (max - min > 3.5 && delta > max - 0.4 && now - stepLastTime > 400) {
     stepLastTime = now;
     setTodaySteps(getTodaySteps() + 1);
     document.getElementById('steps-today').textContent = getTodaySteps();
@@ -994,7 +980,6 @@ function handleDeviceMotion(e) {
 
 // ============ Body (weight, food, workouts, sleep) ============
 function renderBody() {
-  renderWeight();
   renderFood();
   renderWorkouts();
   renderSleepLog();
@@ -1113,6 +1098,7 @@ function renderBreath() {
   if (sessions.length === 0) { el.textContent = 'Нет данных'; return; }
   el.innerHTML = sessions.map(s => `${fmtDate(s.createdAt)}: ${s.tech} · ${s.cycles} циклов`).join('<br>');
 }
+let breathSessionTimer = null;
 function startBreath() {
   if (breathTimer) return;
   const tech = breathTechs[breathTech];
@@ -1140,8 +1126,11 @@ function startBreath() {
   tick();
   document.getElementById('breath-start-btn').disabled = true;
   document.getElementById('breath-stop-btn').disabled = false;
+  if (breathSessionTimer) clearTimeout(breathSessionTimer);
+  breathSessionTimer = setTimeout(() => { toast('Сессия завершена (5 мин)'); stopBreath(); }, 5 * 60 * 1000);
 }
 function stopBreath() {
+  if (breathSessionTimer) { clearTimeout(breathSessionTimer); breathSessionTimer = null; }
   if (breathTimer) { clearTimeout(breathTimer); breathTimer = null; }
   document.getElementById('breath-circle').className = 'breath-circle';
   document.getElementById('breath-text').textContent = 'Готов';
@@ -1402,9 +1391,6 @@ function setupNotifications() {
     const goal = state.settings.waterGoal || 8;
     if (w < goal) sendNotification('Вода', `Вы выпили ${w} из ${goal} стаканов. Время попить воды!`);
   }, 2 * 60 * 60 * 1000);
-  // morning summary of tasks
-  const active = state.tasks.filter(t => !t.done).length;
-  if (active > 0) sendNotification('Задачи на сегодня', `У вас ${active} невыполненных задач.`);
 }
 function notifyTaskDone() {
   // optional
@@ -1432,66 +1418,16 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-action]').forEach(b => {
     b.addEventListener('click', () => {
       const a = b.dataset.action;
-      if (a === 'add-task') { showSection('tasks'); setTimeout(() => document.getElementById('task-input').focus(), 100); }
-      if (a === 'add-note') { openNote(null); }
-      if (a === 'add-diary') { openModal('modal-diary'); }
-      if (a === 'add-expense') { openBudgetModal('expense'); }
+      if (a === 'drink-water') { addWater(1); }
+      if (a === 'start-steps') { showSection('steps'); }
+      if (a === 'start-breath') { showSection('breath'); }
+      if (a === 'record-sleep') { showSection('health'); document.getElementById('sleeprec-start-btn').click(); }
     });
   });
-
-  // tasks
-  document.getElementById('add-task-btn').addEventListener('click', addTask);
-  document.getElementById('task-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); addTask(); }
-  });
-  document.querySelectorAll('.chip').forEach(c => {
-    c.addEventListener('click', () => {
-      document.querySelectorAll('.chip').forEach(x => x.classList.remove('active'));
-      c.classList.add('active');
-      taskFilter = c.dataset.filter;
-      renderTasks();
-    });
-  });
-
-  // notes
-  document.getElementById('add-note-btn').addEventListener('click', () => openNote(null));
-  document.getElementById('note-search').addEventListener('input', renderNotes);
-  document.getElementById('save-note-btn').addEventListener('click', saveNote);
-  document.getElementById('delete-note-btn').addEventListener('click', deleteNote);
-  document.querySelectorAll('.color-dot').forEach(d => {
-    d.addEventListener('click', () => { selectedColor = d.dataset.color; updateColorSelection(); });
-  });
-
-  // diary
-  document.getElementById('add-diary-btn').addEventListener('click', () => openDiary(null));
-  document.getElementById('save-diary-btn').addEventListener('click', saveDiary);
-  document.querySelectorAll('.mood-btn').forEach(m => {
-    m.addEventListener('click', () => {
-      document.querySelectorAll('.mood-btn').forEach(x => x.classList.remove('active'));
-      m.classList.add('active');
-      selectedMood = m.dataset.mood;
-    });
-  });
-  // default mood
-  const defaultMoodBtn = document.querySelector('.mood-btn[data-mood="🙂"]');
-  if (defaultMoodBtn) defaultMoodBtn.classList.add('active');
-
-  // habits
-  document.getElementById('add-habit-btn').addEventListener('click', addHabit);
-  document.getElementById('habit-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); addHabit(); }
-  });
-
-  // budget
-  document.getElementById('add-expense-btn').addEventListener('click', () => openBudgetModal('expense'));
-  document.getElementById('add-income-btn').addEventListener('click', () => openBudgetModal('income'));
-  document.getElementById('budget-month').addEventListener('change', renderBudget);
-  document.getElementById('save-budget-btn').addEventListener('click', saveBudget);
 
   // health
   document.getElementById('water-plus').addEventListener('click', () => addWater(1));
   document.getElementById('water-minus').addEventListener('click', () => addWater(-1));
-  document.getElementById('save-sleep-btn').addEventListener('click', saveSleep);
   document.getElementById('save-steps-btn').addEventListener('click', saveSteps);
   document.getElementById('step-start-btn').addEventListener('click', startStepCounting);
   document.getElementById('step-stop-btn').addEventListener('click', stopStepCounting);
@@ -1510,9 +1446,6 @@ document.addEventListener('DOMContentLoaded', () => {
     saveState();
     document.getElementById('sleeprec-threshold-val').textContent = sleepRecThreshold;
   });
-
-  // body
-  document.getElementById('save-weight-btn').addEventListener('click', saveWeight);
   document.getElementById('add-food-btn').addEventListener('click', addFood);
   document.getElementById('add-workout-btn').addEventListener('click', addWorkout);
   document.getElementById('save-sleeplog-btn').addEventListener('click', saveSleepLog);
