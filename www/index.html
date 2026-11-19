@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Мой Личный Хаб</title>
+  <!-- Шрифты системные — работает офлайн -->
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <meta name="theme-color" content="#1a1410" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <h1 id="page-title">Главная</h1>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="settings-btn" aria-label="Настройки">⚙</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <!-- DASHBOARD -->
+      <section id="sec-dashboard" class="section active">
+        <div class="greeting" id="greeting">Привет!</div>
+        <div class="cards-grid">
+          <div class="card stat-card" data-goto="tasks">
+            <div class="stat-label">Задачи на сегодня</div>
+            <div class="stat-value" id="dash-tasks">0</div>
+            <div class="stat-sub" id="dash-tasks-sub">из 0 выполнено</div>
+          </div>
+          <div class="card stat-card" data-goto="habits">
+            <div class="stat-label">Привычки</div>
+            <div class="stat-value" id="dash-habits">0/0</div>
+            <div class="stat-sub">выполнено сегодня</div>
+          </div>
+          <div class="card stat-card" data-goto="health">
+            <div class="stat-label">Вода</div>
+            <div class="stat-value" id="dash-water">0</div>
+            <div class="stat-sub">стаканов сегодня</div>
+          </div>
+          <div class="card stat-card" data-goto="health">
+            <div class="stat-label">Шаги</div>
+            <div class="stat-value" id="dash-steps">0</div>
+            <div class="stat-sub">шагов сегодня</div>
+          </div>
+          <div class="card stat-card" data-goto="budget">
+            <div class="stat-label">Расходы сегодня</div>
+            <div class="stat-value" id="dash-expenses">0 ₽</div>
+            <div class="stat-sub" id="dash-budget-sub">доходы: 0 ₽</div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Быстрые действия</h3>
+          <div class="quick-actions">
+            <button class="qa-btn" data-action="add-task">+ Задача</button>
+            <button class="qa-btn" data-action="add-note">+ Заметка</button>
+            <button class="qa-btn" data-action="add-diary">+ Запись</button>
+            <button class="qa-btn" data-action="add-expense">+ Расход</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Задачи на сегодня</h3>
+          <div id="dash-task-list" class="muted">Нет задач</div>
+        </div>
+        <div class="card">
+          <h3>Последняя запись дневника</h3>
+          <div id="dash-diary" class="muted">Пока нет записей</div>
+        </div>
+      </section>
+
+      <!-- TASKS -->
+      <section id="sec-tasks" class="section">
+        <div class="section-toolbar" style="flex-wrap:wrap;">
+          <input type="text" id="task-input" placeholder="Новая задача…" style="flex:1;min-width:140px;" />
+          <select id="task-priority" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:10px;font-size:13px;">
+            <option value="high">🔴 Высокий</option>
+            <option value="med" selected>🟡 Средний</option>
+            <option value="low">🟢 Низкий</option>
+          </select>
+          <input type="date" id="task-date" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:10px;font-size:13px;" />
+          <button class="btn-primary small" id="add-task-btn">Добавить</button>
+        </div>
+        <div class="filter-row">
+          <button class="chip active" data-filter="all">Все</button>
+          <button class="chip" data-filter="active">Активные</button>
+          <button class="chip" data-filter="done">Выполненные</button>
+        </div>
+        <ul id="task-list" class="list"></ul>
+      </section>
+
+      <!-- NOTES -->
+      <section id="sec-notes" class="section">
+        <div class="section-toolbar">
+          <input type="text" id="note-search" placeholder="Поиск заметок…" />
+          <button class="btn-primary small" id="add-note-btn">+ Заметка</button>
+        </div>
+        <div id="notes-grid" class="notes-grid"></div>
+      </section>
+
+      <!-- DIARY -->
+      <section id="sec-diary" class="section">
+        <div class="section-toolbar">
+          <button class="btn-primary small" id="add-diary-btn">+ Запись</button>
+        </div>
+        <div id="diary-list" class="diary-list"></div>
+      </section>
+
+      <!-- HABITS -->
+      <section id="sec-habits" class="section">
+        <div class="section-toolbar">
+          <input type="text" id="habit-input" placeholder="Новая привычка…" />
+          <button class="btn-primary small" id="add-habit-btn">Добавить</button>
+        </div>
+        <div id="habits-list" class="habits-list"></div>
+      </section>
+
+      <!-- BUDGET -->
+      <section id="sec-budget" class="section">
+        <div class="section-toolbar" style="flex-wrap:wrap;">
+          <button class="btn-primary small" id="add-expense-btn">+ Расход</button>
+          <button class="btn-ghost small" id="add-income-btn">+ Доход</button>
+          <select id="budget-month" style="background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:10px;font-size:13px;"></select>
+        </div>
+        <div class="budget-summary">
+          <div class="bs-item"><span>Доходы</span><b id="budget-income">0 ₽</b></div>
+          <div class="bs-item"><span>Расходы</span><b id="budget-expense">0 ₽</b></div>
+          <div class="bs-item"><span>Баланс</span><b id="budget-balance">0 ₽</b></div>
+        </div>
+        <div id="budget-list" class="list"></div>
+      </section>
+
+      <!-- HEALTH -->
+      <section id="sec-health" class="section">
+        <div class="card">
+          <h3>Вода</h3>
+          <div class="water-row">
+            <button class="water-btn" id="water-minus">−</button>
+            <div class="water-count" id="water-count">0</div>
+            <button class="water-btn" id="water-plus">+</button>
+          </div>
+          <div class="muted small">Цель: 8 стаканов</div>
+          <div class="progress-bar"><div class="progress-fill" id="water-progress"></div></div>
+        </div>
+        <div class="card">
+          <h3>Сон (часы)</h3>
+          <input type="number" id="sleep-input" min="0" max="24" step="0.5" placeholder="Например 7.5" />
+          <button class="btn-primary small" id="save-sleep-btn" style="margin-top:8px;">Сохранить</button>
+          <div class="muted small" id="sleep-history"></div>
+        </div>
+        <div class="card">
+          <h3>Запись звуков сна</h3>
+          <div class="muted small" id="sleeprec-status">Остановлено</div>
+          <div class="form-group" style="margin-top:8px;">
+            <label>Порог громкости: <span id="sleeprec-threshold-val">25</span></label>
+            <input type="range" id="sleeprec-threshold" min="5" max="60" value="25" />
+            <small class="muted">Записываются только звуки громче порога</small>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn-primary small" id="sleeprec-start-btn">▶ Начать</button>
+            <button class="btn-ghost small" id="sleeprec-stop-btn">■ Стоп</button>
+          </div>
+          <label class="checkbox" style="margin-top:8px;">
+            <input type="checkbox" id="sleeprec-bg-toggle" />
+            <span>Фоновый режим (Android, запись при выключенном экране)</span>
+          </label>
+          <div class="muted small" id="sleeprec-count">Записей: 0</div>
+          <div id="sleeprec-list" style="margin-top:8px;"></div>
+        </div>
+        <div class="card">
+          <h3>Геолокация / Прогулки</h3>
+          <div class="muted small" id="geo-status">Не отслеживается</div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+            <button class="btn-primary small" id="geo-start-btn">▶ Старт</button>
+            <button class="btn-ghost small" id="geo-stop-btn">■ Стоп</button>
+            <button class="btn-ghost small" id="geo-clear-btn">Сброс</button>
+          </div>
+          <div style="margin-top:8px;font-size:13px;">
+            Расстояние: <b id="geo-distance">0</b> км · Шаги (по GPS): <b id="geo-steps">0</b>
+          </div>
+          <div class="muted small" id="geo-history"></div>
+        </div>
+        <div class="card">
+          <h3>Шаги (шагомер)</h3>
+          <div class="step-counter">
+            <div class="step-value" id="steps-today">0</div>
+            <div class="muted small">шагов сегодня</div>
+          </div>
+          <div class="step-controls">
+            <button class="btn-primary" id="step-start-btn">▶ Старт</button>
+            <button class="btn-ghost" id="step-stop-btn">■ Стоп</button>
+            <button class="btn-ghost" id="step-reset-btn">Сброс</button>
+          </div>
+          <div class="muted small" id="step-status">Остановлено</div>
+          <div class="muted small" id="steps-history"></div>
+          <details style="margin-top:10px;">
+            <summary class="muted small" style="cursor:pointer;">Ручная корректировка</summary>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+              <input type="number" id="steps-input" min="0" placeholder="Добавить шаги" style="flex:1;" />
+              <button class="btn-ghost small" id="save-steps-btn">Добавить</button>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <!-- BODY -->
+      <section id="sec-body" class="section">
+        <div class="card">
+          <h3>Вес</h3>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="number" id="weight-input" step="0.1" placeholder="кг" style="flex:1;" />
+            <button class="btn-primary small" id="save-weight-btn">Сохранить</button>
+          </div>
+          <div class="muted small" id="weight-history"></div>
+          <div class="muted small" id="bmi-text"></div>
+        </div>
+        <div class="card">
+          <h3>Приём пищи</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input type="text" id="food-name" placeholder="Блюдо" style="flex:2;" />
+            <input type="number" id="food-kcal" placeholder="ккал" style="flex:1;" />
+            <select id="food-meal" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:10px;font-size:13px;">
+              <option>Завтрак</option><option>Обед</option><option>Ужин</option><option>Перекус</option>
+            </select>
+            <button class="btn-primary small" id="add-food-btn">+</button>
+          </div>
+          <div class="muted small" id="food-today">Сегодня: 0 ккал</div>
+          <div id="food-list"></div>
+        </div>
+        <div class="card">
+          <h3>Тренировка</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input type="text" id="workout-name" placeholder="Упражнение" style="flex:2;" />
+            <input type="number" id="workout-mins" placeholder="мин" style="flex:1;" />
+            <button class="btn-primary small" id="add-workout-btn">+</button>
+          </div>
+          <div class="muted small" id="workout-today">Сегодня: 0 мин</div>
+          <div id="workout-list"></div>
+        </div>
+        <div class="card">
+          <h3>Сон</h3>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <label class="muted small">Отход:</label>
+            <input type="time" id="sleep-bed" style="flex:1;" />
+            <label class="muted small">Подъём:</label>
+            <input type="time" id="sleep-wake" style="flex:1;" />
+            <select id="sleep-quality" style="flex:1;background:var(--card);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:10px;font-size:13px;">
+              <option value="5">😄 Отлично</option><option value="4">🙂 Хорошо</option><option value="3">😐 Нормально</option><option value="2">😔 Плохо</option><option value="1">😡 Ужасно</option>
+            </select>
+            <button class="btn-primary small" id="save-sleeplog-btn">Сохранить</button>
+          </div>
+          <div class="muted small" id="sleeplog-history"></div>
+        </div>
+      </section>
+
+      <!-- BREATH -->
+      <section id="sec-breath" class="section">
+        <div class="card" style="text-align:center;">
+          <h3>Упражнение на дыхание</h3>
+          <div class="breath-circle" id="breath-circle">
+            <div class="breath-text" id="breath-text">Готов</div>
+          </div>
+          <div class="muted small" id="breath-phase">Выберите технику</div>
+          <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap;">
+            <button class="btn-ghost small" data-tech="box">Box (4-4-4-4)</button>
+            <button class="btn-ghost small" data-tech="478">4-7-8</button>
+            <button class="btn-ghost small" data-tech="calm">Спокойствие (5-5)</button>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;">
+            <button class="btn-primary" id="breath-start-btn">Старт</button>
+            <button class="btn-ghost" id="breath-stop-btn">Стоп</button>
+          </div>
+          <div class="muted small" style="margin-top:8px;">Циклов: <span id="breath-cycles">0</span></div>
+        </div>
+        <div class="card">
+          <h3>История</h3>
+          <div class="muted small" id="breath-history">Нет данных</div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section id="sec-settings" class="section">
+        <div class="card">
+          <h3>Настройки</h3>
+          <div class="form-group">
+            <label>Имя</label>
+            <input type="text" id="setting-name" placeholder="Как к вам обращаться" />
+          </div>
+          <div class="form-group">
+            <label>Пароль входа (пусто = без пароля)</label>
+            <input type="password" id="setting-password" placeholder="Пароль" />
+          </div>
+          <div class="form-group">
+            <label>Цель воды (стаканов в день)</label>
+            <input type="number" id="setting-watergoal" min="1" max="20" value="8" />
+          </div>
+          <div class="form-group">
+            <label class="checkbox">
+              <input type="checkbox" id="notif-toggle" />
+              <span>Уведомления (напоминания)</span>
+            </label>
+          </div>
+          <button class="btn-primary" id="save-settings-btn">Сохранить</button>
+        </div>
+        <div class="card">
+          <h3>Облако (Google Drive)</h3>
+          <div class="form-group">
+            <label>Google OAuth Client ID</label>
+            <input type="text" id="gdrive-clientid" placeholder="xxxx.apps.googleusercontent.com" />
+            <small class="muted">Создайте в Google Cloud Console → Credentials → OAuth 2.0 Client ID (Web). Добавьте origin вашего сайта.</small>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn-primary small" id="gdrive-auth-btn">Войти в Google</button>
+            <button class="btn-ghost small" id="gdrive-backup-btn">Загрузить в Drive</button>
+            <button class="btn-ghost small" id="gdrive-restore-btn">Восстановить</button>
+          </div>
+          <div class="muted small" id="gdrive-status"></div>
+        </div>
+        <div class="card">
+          <h3>Данные</h3>
+          <div class="quick-actions">
+            <button class="qa-btn" id="export-btn">Экспорт JSON</button>
+            <button class="qa-btn" id="import-btn">Импорт JSON</button>
+            <input type="file" id="import-file" accept="application/json" hidden />
+          </div>
+          <button class="btn-danger" id="clear-data-btn" style="margin-top:12px;">Очистить все данные</button>
+          <button class="btn-ghost" id="clear-cache-btn" style="margin-top:8px;">Очистить кэш и обновить</button>
+        </div>
+        <div class="card">
+          <h3>Статистика</h3>
+          <div class="muted small" id="stats-text">—</div>
+        </div>
+        <div class="card">
+          <h3>О приложении</h3>
+          <div class="muted">Мой Личный Хаб v1.1 — работает офлайн (PWA). Данные хранятся в браузере.</div>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-section="dashboard"><span class="nav-icon">🏠</span><span class="nav-label">Главная</span></button>
+      <button class="nav-item" data-section="tasks"><span class="nav-icon">✅</span><span class="nav-label">Задачи</span></button>
+      <button class="nav-item" data-section="notes"><span class="nav-icon">📝</span><span class="nav-label">Заметки</span></button>
+      <button class="nav-item" data-section="diary"><span class="nav-icon">📔</span><span class="nav-label">Дневник</span></button>
+      <button class="nav-item" data-section="habits"><span class="nav-icon">🔥</span><span class="nav-label">Привычки</span></button>
+      <button class="nav-item" data-section="budget"><span class="nav-icon">💰</span><span class="nav-label">Бюджет</span></button>
+      <button class="nav-item" data-section="health"><span class="nav-icon">❤️</span><span class="nav-label">Здоровье</span></button>
+      <button class="nav-item" data-section="body"><span class="nav-icon">💪</span><span class="nav-label">Тело</span></button>
+      <button class="nav-item" data-section="breath"><span class="nav-icon">🧘</span><span class="nav-label">Дыхание</span></button>
+      <button class="nav-item" data-section="settings"><span class="nav-icon">⚙</span><span class="nav-label">Настройки</span></button>
+    </nav>
+  </div>
+
+  <!-- Modals -->
+  <div id="modal-note" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card">
+      <div class="modal-header"><h2 id="note-modal-title">Новая заметка</h2><button class="icon-btn" data-close="modal-note">✕</button></div>
+      <div class="modal-body">
+        <div class="form-group"><label>Заголовок</label><input type="text" id="note-title" placeholder="Без названия" /></div>
+        <div class="form-group"><label>Текст</label><textarea id="note-content" rows="8" placeholder="Запишите мысль…"></textarea></div>
+        <div class="form-group"><label>Цвет</label>
+          <div class="color-row">
+            <button class="color-dot" data-color="#3a2a1f" style="background:#3a2a1f"></button>
+            <button class="color-dot" data-color="#5a3a2a" style="background:#5a3a2a"></button>
+            <button class="color-dot" data-color="#2a3a2f" style="background:#2a3a2f"></button>
+            <button class="color-dot" data-color="#2a2f3a" style="background:#2a2f3a"></button>
+            <button class="color-dot" data-color="#3a2a35" style="background:#3a2a35"></button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-danger" id="delete-note-btn">Удалить</button>
+        <button class="btn-primary" id="save-note-btn">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-diary" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card">
+      <div class="modal-header"><h2 id="diary-modal-title">Новая запись</h2><button class="icon-btn" data-close="modal-diary">✕</button></div>
+      <div class="modal-body">
+        <div class="form-group"><label>Настроение</label>
+          <div class="mood-row">
+            <button class="mood-btn" data-mood="😄">😄</button>
+            <button class="mood-btn" data-mood="🙂">🙂</button>
+            <button class="mood-btn" data-mood="😐">😐</button>
+            <button class="mood-btn" data-mood="😔">😔</button>
+            <button class="mood-btn" data-mood="😡">😡</button>
+          </div>
+        </div>
+        <div class="form-group"><label>Текст</label><textarea id="diary-content" rows="10" placeholder="Как прошёл день…"></textarea></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" id="save-diary-btn">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-budget" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card">
+      <div class="modal-header"><h2 id="budget-modal-title">Новый расход</h2><button class="icon-btn" data-close="modal-budget">✕</button></div>
+      <div class="modal-body">
+        <div class="form-group"><label>Сумма</label><input type="number" id="budget-amount" placeholder="0" /></div>
+        <div class="form-group"><label>Категория</label>
+          <select id="budget-category">
+            <option>Еда</option>
+            <option>Транспорт</option>
+            <option>Развлечения</option>
+            <option>Покупки</option>
+            <option>Здоровье</option>
+            <option>Жильё</option>
+            <option>Другое</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Описание</label><input type="text" id="budget-desc" placeholder="Комментарий" /></div>
+        <input type="hidden" id="budget-type" value="expense" />
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" id="save-budget-btn">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-login" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card">
+      <div class="modal-header"><h2>Вход</h2></div>
+      <div class="modal-body">
+        <div class="form-group"><label>Пароль</label><input type="password" id="login-password" placeholder="Пароль" /></div>
+        <div id="login-error" class="login-error"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" id="login-btn">Войти</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-setup" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-card">
+      <div class="modal-header"><h2>Создайте пароль</h2></div>
+      <div class="modal-body">
+        <div class="muted small" style="margin-bottom:10px;">Приложение защищено паролем. Задайте пароль для входа.</div>
+        <div class="form-group"><label>Пароль</label><input type="password" id="setup-password" placeholder="Пароль" /></div>
+        <div class="form-group"><label>Повторите пароль</label><input type="password" id="setup-password2" placeholder="Повтор" /></div>
+        <div id="setup-error" class="login-error"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary" id="setup-btn">Установить</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

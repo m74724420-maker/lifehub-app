@@ -1,0 +1,18 @@
+{
+  "name": "Мой Личный Хаб",
+  "short_name": "Личный Хаб",
+  "description": "Личное приложение: задачи, заметки, дневник, привычки, бюджет, здоровье",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1a1410",
+  "theme_color": "#1a1410",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
