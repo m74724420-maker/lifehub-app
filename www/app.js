@@ -730,6 +730,7 @@ async function startSleepRecording() {
       sleepRecActive = true;
       document.getElementById('sleeprec-status').textContent = 'Фоновая запись…';
       document.getElementById('sleeprec-start-btn').disabled = true;
+      document.getElementById('sleeprec-start-btn').textContent = '● Идёт';
       document.getElementById('sleeprec-stop-btn').disabled = false;
       toast('Фоновая запись запущена');
     } catch (e) {
@@ -752,6 +753,7 @@ async function startSleepRecording() {
   sleepRecActive = true;
   document.getElementById('sleeprec-status').textContent = 'Слушаю…';
   document.getElementById('sleeprec-start-btn').disabled = true;
+  document.getElementById('sleeprec-start-btn').textContent = '● Идёт';
   document.getElementById('sleeprec-stop-btn').disabled = false;
 
   monitorSleepAudio();
@@ -820,6 +822,7 @@ async function stopSleepRecording() {
     sleepRecActive = false;
     document.getElementById('sleeprec-status').textContent = 'Остановлено';
     document.getElementById('sleeprec-start-btn').disabled = false;
+    document.getElementById('sleeprec-start-btn').textContent = '▶ Начать';
     document.getElementById('sleeprec-stop-btn').disabled = true;
     await renderNativeRecordings();
     toast('Фоновая запись остановлена');
@@ -832,6 +835,7 @@ async function stopSleepRecording() {
   if (sleepRecAudioCtx) { sleepRecAudioCtx.close(); sleepRecAudioCtx = null; }
   document.getElementById('sleeprec-status').textContent = 'Остановлено';
   document.getElementById('sleeprec-start-btn').disabled = false;
+  document.getElementById('sleeprec-start-btn').textContent = '▶ Начать';
   document.getElementById('sleeprec-stop-btn').disabled = true;
   await renderSleepRecordings();
 }
