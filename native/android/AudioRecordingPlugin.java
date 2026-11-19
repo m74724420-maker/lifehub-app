@@ -29,14 +29,21 @@ public class AudioRecordingPlugin extends Plugin {
     @PluginMethod
     public void checkNotificationPermission(PluginCall call) {
         JSObject ret = new JSObject();
-        ret.put("granted", getPermissionState("notifications") == PermissionState.GRANTED);
+        boolean granted;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            granted = getContext().checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED;
+        } else {
+            granted = true;
+        }
+        ret.put("granted", granted);
         call.resolve(ret);
     }
 
     @PluginMethod
     public void checkMicrophonePermission(PluginCall call) {
         JSObject ret = new JSObject();
-        ret.put("granted", getPermissionState("microphone") == PermissionState.GRANTED);
+        boolean granted = getContext().checkSelfPermission(Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED;
+        ret.put("granted", granted);
         call.resolve(ret);
     }
 
@@ -48,7 +55,8 @@ public class AudioRecordingPlugin extends Plugin {
     @PermissionCallback
     private void microphonePermissionResult(PluginCall call) {
         JSObject ret = new JSObject();
-        ret.put("granted", getPermissionState("microphone") == PermissionState.GRANTED);
+        boolean granted = getContext().checkSelfPermission(Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED;
+        ret.put("granted", granted);
         call.resolve(ret);
     }
 
@@ -60,13 +68,19 @@ public class AudioRecordingPlugin extends Plugin {
     @PermissionCallback
     private void notificationPermissionResult(PluginCall call) {
         JSObject ret = new JSObject();
-        ret.put("granted", getPermissionState("notifications") == PermissionState.GRANTED);
+        boolean granted;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            granted = getContext().checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED;
+        } else {
+            granted = true;
+        }
+        ret.put("granted", granted);
         call.resolve(ret);
     }
 
     @PluginMethod
     public void startRecording(PluginCall call) {
-        if (getPermissionState("microphone") != PermissionState.GRANTED) {
+        if (getContext().checkSelfPermission(Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
             call.reject("Microphone permission is required");
             return;
         }
