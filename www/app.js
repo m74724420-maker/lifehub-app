@@ -39,10 +39,21 @@ function fmtDate(iso) {
 }
 
 // ============ Auth ============
+let authenticated = false;
+function isAuthRequired() {
+  return !document.getElementById('modal-login').classList.contains('hidden') ||
+         !document.getElementById('modal-setup').classList.contains('hidden');
+}
 function checkAuth() {
+  authenticated = false;
   if (state.password) {
+    document.getElementById('login-password').value = '';
+    document.getElementById('login-error').textContent = '';
     openModal('modal-login');
   } else {
+    document.getElementById('setup-password').value = '';
+    document.getElementById('setup-password2').value = '';
+    document.getElementById('setup-error').textContent = '';
     openModal('modal-setup');
   }
 }
@@ -59,12 +70,14 @@ function doSetup() {
   }
   state.password = p1;
   saveState();
+  authenticated = true;
   closeModal('modal-setup');
   toast('Пароль установлен');
 }
 function doLogin() {
   const val = document.getElementById('login-password').value;
   if (val === state.password) {
+    authenticated = true;
     closeModal('modal-login');
   } else {
     document.getElementById('login-error').textContent = 'Неверный пароль';
@@ -86,6 +99,7 @@ const sectionTitles = {
 };
 
 function showSection(name) {
+  if (isAuthRequired()) { checkAuth(); return; }
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById('sec-' + name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(b => {
@@ -118,9 +132,25 @@ document.querySelectorAll('[data-close]').forEach(b => {
 document.querySelectorAll('.modal-backdrop').forEach(bd => {
   bd.addEventListener('click', () => {
     const modal = bd.parentElement;
-    if (modal && modal.id !== 'modal-login') closeModal(modal.id);
+    if (modal && modal.id !== 'modal-login' && modal.id !== 'modal-setup') closeModal(modal.id);
   });
 });
+// Auth screen cannot be dismissed by Escape, Back button or swiping away
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && isAuthRequired()) e.preventDefault();
+});
+document.addEventListener('touchmove', (e) => {
+  if (isAuthRequired()) e.preventDefault();
+}, { passive: false });
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && isAuthRequired()) checkAuth();
+});
+if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App && window.Capacitor.Plugins.App.addListener) {
+  window.Capacitor.Plugins.App.addListener('backButton', () => {
+    if (isAuthRequired()) return;
+    if (window.history.length > 1) window.history.back();
+  });
+}
 
 // ============ Dashboard ============
 function renderDashboard() {
@@ -682,8 +712,25 @@ async function deleteSleepRecording(id) {
   });
 }
 
+async function requestMicPermission() {
+  const plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AudioRecording;
+  if (plugin && plugin.requestMicrophonePermission) {
+    try {
+      const r = await plugin.requestMicrophonePermission();
+      return !!r.granted;
+    } catch (e) { return false; }
+  }
+  return true;
+}
+
 async function startSleepRecording() {
   if (sleepRecActive) return;
+  const micOk = await requestMicPermission();
+  if (!micOk) {
+    document.getElementById('sleeprec-status').textContent = 'Нет доступа к микрофону. Разрешите его в настройках приложения.';
+    toast('Разрешите доступ к микрофону');
+    return;
+  }
   const bg = document.getElementById('sleeprec-bg-toggle').checked;
   if (bg && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AudioRecording) {
     try {
@@ -1264,6 +1311,13 @@ function notifStatus(text) {
   if (el) el.textContent = text || '';
 }
 async function hasNotificationPermission() {
+  const custom = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AudioRecording;
+  if (custom && custom.checkNotificationPermission) {
+    try {
+      const r = await custom.checkNotificationPermission();
+      return !!r.granted;
+    } catch (e) { return false; }
+  }
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
     try {
       const p = await window.Capacitor.Plugins.LocalNotifications.checkPermissions();
@@ -1273,6 +1327,20 @@ async function hasNotificationPermission() {
   return 'Notification' in window && Notification.permission === 'granted';
 }
 async function requestNotificationPermission() {
+  const custom = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AudioRecording;
+  if (custom && custom.requestNotificationPermission) {
+    try {
+      const r = await custom.requestNotificationPermission();
+      const ok = !!r.granted;
+      const msg = ok ? 'Уведомления включены' : 'Разрешение не получено — включите в настройках телефона';
+      toast(msg); notifStatus(msg);
+      return ok;
+    } catch (e) {
+      const msg = 'Ошибка запроса разрешения: ' + e.message;
+      toast(msg); notifStatus(msg);
+      return false;
+    }
+  }
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
     try {
       const p = await window.Capacitor.Plugins.LocalNotifications.requestPermissions();
@@ -1506,7 +1574,9 @@ document.addEventListener('DOMContentLoaded', () => {
   checkAuth();
   showSection('dashboard');
   setupNotifications();
-  if (state.settings.notifications && window.Capacitor) {
-    hasNotificationPermission().then(ok => { if (!ok) requestNotificationPermission(); });
+  if (window.Capacitor) {
+    setTimeout(() => {
+      hasNotificationPermission().then(ok => { if (!ok) requestNotificationPermission(); });
+    }, 1200);
   }
 });

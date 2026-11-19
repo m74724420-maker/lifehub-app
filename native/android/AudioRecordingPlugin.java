@@ -1,25 +1,75 @@
 package com.maria.lifehub;
 
+import android.Manifest;
 import android.content.Intent;
 import android.util.Base64;
-import android.util.Log;
 
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
+import com.getcapacitor.PermissionState;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
 
 import java.io.File;
 import java.io.FileInputStream;
 
-@CapacitorPlugin(name = "AudioRecording")
+@CapacitorPlugin(
+    name = "AudioRecording",
+    permissions = {
+        @Permission(alias = "microphone", strings = { Manifest.permission.RECORD_AUDIO }),
+        @Permission(alias = "notifications", strings = { Manifest.permission.POST_NOTIFICATIONS })
+    }
+)
 public class AudioRecordingPlugin extends Plugin {
-    private static final String TAG = "AudioRecordingPlugin";
+
+    @PluginMethod
+    public void checkNotificationPermission(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("granted", getPermissionState("notifications") == PermissionState.GRANTED);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void checkMicrophonePermission(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("granted", getPermissionState("microphone") == PermissionState.GRANTED);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void requestMicrophonePermission(PluginCall call) {
+        requestPermissionForAlias("microphone", call, "microphonePermissionResult");
+    }
+
+    @PermissionCallback
+    private void microphonePermissionResult(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("granted", getPermissionState("microphone") == PermissionState.GRANTED);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void requestNotificationPermission(PluginCall call) {
+        requestPermissionForAlias("notifications", call, "notificationPermissionResult");
+    }
+
+    @PermissionCallback
+    private void notificationPermissionResult(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("granted", getPermissionState("notifications") == PermissionState.GRANTED);
+        call.resolve(ret);
+    }
 
     @PluginMethod
     public void startRecording(PluginCall call) {
+        if (getPermissionState("microphone") != PermissionState.GRANTED) {
+            call.reject("Microphone permission is required");
+            return;
+        }
         Intent intent = new Intent(getContext(), AudioRecordingService.class);
         String outputFile = call.getString("outputFile");
         if (outputFile != null) intent.putExtra("outputFile", outputFile);
