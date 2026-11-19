@@ -22,6 +22,7 @@ body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .app {
@@ -282,8 +283,11 @@ body {
 
 .form-group { margin-bottom: 12px; }
 .form-group label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
-.checkbox { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-.checkbox input { width: auto; }
+.toggle-row { display: flex; align-items: center; gap: 8px; cursor: pointer; width: auto; height: auto; border: 0; background: none; padding: 0; }
+.toggle-row input { width: auto; flex-shrink: 0; }
+.card, .section { min-width: 0; }
+.content { overflow-x: hidden; }
+input, textarea, select { max-width: 100%; }
 .form-group input, .form-group textarea, .form-group select {
   width: 100%;
   background: var(--bg);

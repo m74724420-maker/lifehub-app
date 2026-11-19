@@ -36,6 +36,8 @@ jobs:
           cp native/android/AudioRecordingService.java "$PKG_DIR/"
           cp native/android/AudioRecordingPlugin.java "$PKG_DIR/"
           cp native/android/MainActivity.java "$PKG_DIR/"
+          mkdir -p android/app/src/main/res/drawable
+          cp native/android/ic_stat_lifehub.xml android/app/src/main/res/drawable/
           python3 native/android/patch_manifest.py
 
       - name: Sync Capacitor

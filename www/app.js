@@ -1197,6 +1197,7 @@ function loadSettingsForm() {
   document.getElementById('setting-watergoal').value = state.settings.waterGoal || 8;
   document.getElementById('notif-toggle').checked = !!state.settings.notifications;
   document.getElementById('gdrive-clientid').value = state.settings.gdriveClientId || '';
+  hasNotificationPermission().then(ok => notifStatus(ok ? 'Разрешение на уведомления есть' : 'Разрешение не получено — нажмите кнопку ниже'));
   const stats = `Задач: ${state.tasks.length} (выполнено ${state.tasks.filter(t=>t.done).length}) · Заметок: ${state.notes.length} · Записей дневника: ${state.diary.length} · Привычек: ${state.habits.length} · Операций бюджета: ${state.budget.length}`;
   document.getElementById('stats-text').textContent = stats;
 }
@@ -1258,19 +1259,49 @@ function toast(msg) {
 }
 
 let waterReminderTimer = null;
-function requestNotificationPermission() {
+function notifStatus(text) {
+  const el = document.getElementById('notif-status');
+  if (el) el.textContent = text || '';
+}
+async function hasNotificationPermission() {
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
-    window.Capacitor.Plugins.LocalNotifications.requestPermissions().then(p => {
-      if (p.display === 'granted') toast('Уведомления включены');
-      else toast('Разрешение не получено');
-    }).catch(() => toast('Разрешение не получено'));
-    return;
+    try {
+      const p = await window.Capacitor.Plugins.LocalNotifications.checkPermissions();
+      return p.display === 'granted';
+    } catch (e) { return false; }
   }
-  if (!('Notification' in window)) { toast('Уведомления не поддерживаются'); return; }
-  Notification.requestPermission().then(p => {
-    if (p === 'granted') toast('Уведомления включены');
-    else toast('Разрешение не получено');
-  });
+  return 'Notification' in window && Notification.permission === 'granted';
+}
+async function requestNotificationPermission() {
+  if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
+    try {
+      const p = await window.Capacitor.Plugins.LocalNotifications.requestPermissions();
+      const ok = p.display === 'granted';
+      const msg = ok ? 'Уведомления включены' : 'Разрешение не получено — включите в настройках телефона';
+      toast(msg); notifStatus(msg);
+      return ok;
+    } catch (e) {
+      const msg = 'Ошибка запроса разрешения: ' + e.message;
+      toast(msg); notifStatus(msg);
+      return false;
+    }
+  }
+  if (!('Notification' in window)) {
+    const msg = 'Уведомления не поддерживаются в этом браузере';
+    toast(msg); notifStatus(msg);
+    return false;
+  }
+  try {
+    const p = await Notification.requestPermission();
+    const ok = p === 'granted';
+    const msg = ok ? 'Уведомления включены' : 'Разрешение не получено';
+    toast(msg); notifStatus(msg);
+    return ok;
+  } catch (e) {
+    const msg = 'Ошибка запроса разрешения: ' + e.message;
+    toast(msg); notifStatus(msg);
+    return false;
+  }
 }
 function sendNotification(title, body) {
   if (!state.settings.notifications) return;
@@ -1282,7 +1313,7 @@ function sendNotification(title, body) {
         body: body || '',
         id: Date.now() % 100000,
         schedule: { at: new Date(Date.now() + 100) },
-        smallIcon: 'ic_stat_icon_config_sample'
+        smallIcon: 'ic_stat_lifehub'
       }]
     }).catch(() => {});
     return;
@@ -1435,6 +1466,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // settings
   document.getElementById('settings-btn').addEventListener('click', () => showSection('settings'));
   document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
+  document.getElementById('notif-permission-btn').addEventListener('click', requestNotificationPermission);
   document.getElementById('export-btn').addEventListener('click', exportData);
   document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-file').click());
   document.getElementById('import-file').addEventListener('change', (e) => {
@@ -1474,4 +1506,7 @@ document.addEventListener('DOMContentLoaded', () => {
   checkAuth();
   showSection('dashboard');
   setupNotifications();
+  if (state.settings.notifications && window.Capacitor) {
+    hasNotificationPermission().then(ok => { if (!ok) requestNotificationPermission(); });
+  }
 });

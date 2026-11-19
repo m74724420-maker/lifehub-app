@@ -10,7 +10,7 @@
       "permissions": ["location"]
     },
     "LocalNotifications": {
-      "smallIcon": "ic_stat_icon_config_sample",
+      "smallIcon": "ic_stat_lifehub",
       "iconColor": "#d4a373"
     },
     "Motion": {}
