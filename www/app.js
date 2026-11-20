@@ -585,6 +585,11 @@ async function startGeoTracking() {
   geoPoints = [];
   geoStart = Date.now();
   document.getElementById('geo-status').textContent = 'Отслеживание…';
+  setTimeout(() => {
+    if (geoWatchId !== null && geoPoints.length === 0) {
+      document.getElementById('geo-status').textContent = 'Нет сигнала GPS. Включите геолокацию на телефоне.';
+    }
+  }, 6000);
   document.getElementById('geo-start-btn').disabled = true;
   document.getElementById('geo-stop-btn').disabled = false;
   const onSuccess = (pos) => {
@@ -711,8 +716,13 @@ async function requestMicPermission() {
   if (plugin && plugin.requestMicrophonePermission) {
     try {
       const r = await plugin.requestMicrophonePermission();
-      return !!r.granted;
-    } catch (e) { return false; }
+      if (r && r.granted) return true;
+    } catch (e) {}
+    try {
+      const c = await plugin.checkMicrophonePermission();
+      if (c && c.granted) return true;
+    } catch (e) {}
+    return false;
   }
   return true;
 }
@@ -917,12 +927,35 @@ function renderGeoHistory() {
 
 // ============ Step counter (DeviceMotion) ============
 let stepCounting = false;
+let stepListenerAdded = false;
 let stepLastTime = 0;
 let stepAccelBuf = [];
 
-function startStepCounting() {
+async function startStepCounting() {
   if (stepCounting) return;
   const status = document.getElementById('step-status');
+  const nativeStep = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.StepCounter;
+  if (nativeStep) {
+    try {
+      await nativeStep.start();
+      stepCounting = true;
+      status.textContent = 'Считаю… (датчик шагов)';
+      if (!stepListenerAdded) {
+        stepListenerAdded = true;
+        nativeStep.addListener('step', () => {
+          if (!stepCounting) return;
+          setTodaySteps(getTodaySteps() + 1);
+          document.getElementById('steps-today').textContent = getTodaySteps();
+          document.getElementById('dash-steps').textContent = getTodaySteps();
+        });
+      }
+      document.getElementById('step-start-btn').disabled = true;
+      document.getElementById('step-stop-btn').disabled = false;
+      return;
+    } catch (e) {
+      status.textContent = 'Датчик шагов недоступен, использую акселерометр';
+    }
+  }
   if (typeof DeviceMotionEvent === 'undefined') {
     status.textContent = 'Датчик недоступен в этом браузере';
     return;
@@ -957,6 +990,8 @@ function startStepCounting() {
 }
 function stopStepCounting() {
   stepCounting = false;
+  const nativeStep = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.StepCounter;
+  if (nativeStep) { try { nativeStep.stop(); } catch (e) {} }
   window.removeEventListener('devicemotion', handleDeviceMotion);
   if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Motion) {
     window.Capacitor.Plugins.Motion.removeAllListeners();
@@ -1484,6 +1519,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('sleeprec-start-btn').addEventListener('click', startSleepRecording);
   document.getElementById('sleeprec-stop-btn').addEventListener('click', stopSleepRecording);
   document.getElementById('sleeprec-stop-btn').disabled = true;
+  document.getElementById('open-settings-btn').addEventListener('click', () => {
+    const plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AudioRecording;
+    if (plugin && plugin.openAppSettings) plugin.openAppSettings().catch(() => {});
+    else window.open('https://github.com', '_blank');
+  });
   document.getElementById('sleeprec-threshold').addEventListener('input', (e) => {
     sleepRecThreshold = Number(e.target.value);
     state.settings.sleepRecThreshold = sleepRecThreshold;

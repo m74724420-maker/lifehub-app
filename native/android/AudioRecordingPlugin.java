@@ -27,6 +27,15 @@ import java.io.FileInputStream;
 public class AudioRecordingPlugin extends Plugin {
 
     @PluginMethod
+    public void openAppSettings(PluginCall call) {
+        Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        intent.setData(android.net.Uri.fromParts("package", getContext().getPackageName(), null));
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        getContext().startActivity(intent);
+        call.resolve();
+    }
+
+    @PluginMethod
     public void checkNotificationPermission(PluginCall call) {
         JSObject ret = new JSObject();
         boolean granted;
