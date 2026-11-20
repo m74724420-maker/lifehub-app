@@ -1,4 +1,4 @@
-const CACHE = 'lifehub-v17';
+const CACHE = 'lifehub-v18';
 const ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', (e) => {

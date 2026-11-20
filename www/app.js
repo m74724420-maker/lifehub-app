@@ -983,11 +983,13 @@ function handleAccel(x, y, z) {
   const min = Math.min(...vals);
   const range = max - min;
   // ignore shakes (too large) and tiny noise
-  if (range < 3.0 || range > 12.0) return;
-  // peak detection: current value is near max and rising edge
+  if (range < 4.0 || range > 12.0) return;
+  // baseline = average of earlier values in the window
+  const windowSize = Math.max(3, vals.length - 2);
+  const baseline = vals.slice(0, vals.length - 2).reduce((s, v) => s + v, 0) / windowSize;
   const recent = vals.slice(-3);
   const isPeak = delta > max - 0.5 && recent[2] >= recent[1] && recent[1] >= recent[0] * 0.5;
-  if (isPeak && delta > 2.0 && now - stepLastTime > 450) {
+  if (isPeak && delta > 3.0 && delta > baseline + 2.0 && now - stepLastTime > 450) {
     stepLastTime = now;
     setTodaySteps(getTodaySteps() + 1);
     document.getElementById('steps-today').textContent = getTodaySteps();
