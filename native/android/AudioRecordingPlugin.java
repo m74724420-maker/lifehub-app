@@ -42,8 +42,11 @@ public class AudioRecordingPlugin extends Plugin {
     @PluginMethod
     public void checkMicrophonePermission(PluginCall call) {
         JSObject ret = new JSObject();
-        boolean granted = getContext().checkSelfPermission(Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED;
+        int raw = getContext().checkSelfPermission(Manifest.permission.RECORD_AUDIO);
+        boolean granted = raw == android.content.pm.PackageManager.PERMISSION_GRANTED;
         ret.put("granted", granted);
+        ret.put("raw", raw);
+        ret.put("sdk", android.os.Build.VERSION.SDK_INT);
         call.resolve(ret);
     }
 

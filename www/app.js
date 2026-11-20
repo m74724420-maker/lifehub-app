@@ -570,11 +570,13 @@ async function startGeoTracking() {
     try {
       const p = await window.Capacitor.Plugins.Geolocation.requestPermissions();
       if (p.location !== 'granted' && p.coarseLocation !== 'granted') {
-        document.getElementById('geo-status').textContent = 'Нет разрешения на геолокацию';
+        document.getElementById('geo-status').textContent = 'Нет разрешения на геолокацию (location=' + (p.location||'?') + ')';
         toast('Разрешите геолокацию в настройках телефона');
         return;
       }
-    } catch (e) {}
+    } catch (e) {
+      document.getElementById('geo-status').textContent = 'Ошибка запроса геолокации: ' + e.message;
+    }
   }
   if (!('geolocation' in navigator)) {
     document.getElementById('geo-status').textContent = 'Геолокация не поддерживается';
@@ -719,7 +721,12 @@ async function startSleepRecording() {
   if (sleepRecActive) return;
   const micOk = await requestMicPermission();
   if (!micOk) {
-    document.getElementById('sleeprec-status').textContent = 'Нет доступа к микрофону. Разрешите его в настройках приложения.';
+    const plugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AudioRecording;
+    let diag = '';
+    if (plugin && plugin.checkMicrophonePermission) {
+      try { const c = await plugin.checkMicrophonePermission(); diag = ` (raw=${c.raw}, sdk=${c.sdk})`; } catch (e) { diag = ' (check err: ' + e.message + ')'; }
+    }
+    document.getElementById('sleeprec-status').textContent = 'Нет доступа к микрофону. Разрешите его в настройках приложения.' + diag;
     toast('Разрешите доступ к микрофону');
     return;
   }
