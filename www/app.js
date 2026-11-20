@@ -969,12 +969,18 @@ function handleAccel(x, y, z) {
   const delta = mag - 9.81;
   const now = Date.now();
   stepAccelBuf.push({ t: now, v: delta });
-  stepAccelBuf = stepAccelBuf.filter(h => now - h.t < 500);
-  if (stepAccelBuf.length < 8) return;
+  stepAccelBuf = stepAccelBuf.filter(h => now - h.t < 600);
+  if (stepAccelBuf.length < 10) return;
   const vals = stepAccelBuf.map(h => h.v);
   const max = Math.max(...vals);
   const min = Math.min(...vals);
-  if (max - min > 3.5 && delta > max - 0.4 && now - stepLastTime > 400) {
+  const range = max - min;
+  // ignore shakes (too large) and tiny noise
+  if (range < 3.0 || range > 12.0) return;
+  // peak detection: current value is near max and rising edge
+  const recent = vals.slice(-3);
+  const isPeak = delta > max - 0.5 && recent[2] >= recent[1] && recent[1] >= recent[0] * 0.5;
+  if (isPeak && delta > 2.0 && now - stepLastTime > 450) {
     stepLastTime = now;
     setTodaySteps(getTodaySteps() + 1);
     document.getElementById('steps-today').textContent = getTodaySteps();
